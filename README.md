@@ -12,14 +12,75 @@ docker compose up --build
 
 API listens on `http://localhost:8000`.
 
+### Health
+
 ```bash
-# Example: 1-qubit Hadamard, 1024 shots
+curl -s http://localhost:8000/health
+```
+
+### Submit (Hadamard, 1024 shots)
+
+```bash
 curl -s -X POST http://localhost:8000/tasks \
   -H 'Content-Type: application/json' \
   -d '{"qc":"OPENQASM 3.0;\ninclude \"stdgates.inc\";\nbit[1] c;\nqubit[1] q;\nh q[0];\nc[0] = measure q[0];\n"}'
+```
 
-# Poll with the returned task_id
+### Poll
+
+Replace the id from the submit response:
+
+```bash
 curl -s http://localhost:8000/tasks/<task_id>
+```
+
+### Submit and poll in one shot
+
+First GET is often `pending`. After a few seconds, GET should be `completed` with counts summing to 1024.
+
+```bash
+TASK_ID=$(curl -s -X POST http://localhost:8000/tasks \
+  -H 'Content-Type: application/json' \
+  -d '{"qc":"OPENQASM 3.0;\ninclude \"stdgates.inc\";\nbit[1] c;\nqubit[1] q;\nh q[0];\nc[0] = measure q[0];\n"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['task_id'])")
+
+echo "task_id=$TASK_ID"
+curl -s "http://localhost:8000/tasks/$TASK_ID"
+sleep 3
+curl -s "http://localhost:8000/tasks/$TASK_ID"
+```
+
+### Bell pair
+
+```bash
+curl -s -X POST http://localhost:8000/tasks \
+  -H 'Content-Type: application/json' \
+  -d '{"qc":"OPENQASM 3.0;\ninclude \"stdgates.inc\";\nbit[2] c;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\nc[0] = measure q[0];\nc[1] = measure q[1];\n"}'
+```
+
+### Negative paths
+
+```bash
+# unknown id
+curl -s -w "\nHTTP %{http_code}\n" \
+  http://localhost:8000/tasks/00000000-0000-0000-0000-000000000000
+
+# invalid QASM
+curl -s -w "\nHTTP %{http_code}\n" -X POST http://localhost:8000/tasks \
+  -H 'Content-Type: application/json' \
+  -d '{"qc":"not-a-circuit"}'
+
+# missing qc
+curl -s -w "\nHTTP %{http_code}\n" -X POST http://localhost:8000/tasks \
+  -H 'Content-Type: application/json' \
+  -d '{}'
+```
+
+### Metrics
+
+```bash
+curl -s http://localhost:8000/metrics | grep tasks_
+curl -s http://localhost:9090/metrics | grep tasks_
 ```
 
 Tear down:
