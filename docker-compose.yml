@@ -57,7 +57,7 @@ services:
 
   worker:
     build: .
-    command: celery -A app.worker.tasks worker --loglevel=info --concurrency=1
+    command: celery -A app.worker.tasks worker --loglevel=info --concurrency=1 --pool=solo
     ports:
       - "9090:9090"
     environment:

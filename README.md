@@ -60,17 +60,26 @@ curl -s -X POST http://localhost:8000/tasks \
 
 ### Negative paths
 
+zsh interactive shells often do not treat `#` as a comment. Labels are outside the commands so you can paste each block as-is.
+
+Unknown id:
+
 ```bash
-# unknown id
 curl -s -w "\nHTTP %{http_code}\n" \
   http://localhost:8000/tasks/00000000-0000-0000-0000-000000000000
+```
 
-# invalid QASM
+Invalid QASM:
+
+```bash
 curl -s -w "\nHTTP %{http_code}\n" -X POST http://localhost:8000/tasks \
   -H 'Content-Type: application/json' \
   -d '{"qc":"not-a-circuit"}'
+```
 
-# missing qc
+Missing `qc`:
+
+```bash
 curl -s -w "\nHTTP %{http_code}\n" -X POST http://localhost:8000/tasks \
   -H 'Content-Type: application/json' \
   -d '{}'
@@ -222,6 +231,8 @@ Structured JSON logs (`task_id`, `status`, `reason`, durations).
 | `GET /health` | Postgres + RabbitMQ checks |
 | `GET /metrics` (api :8000) | HTTP metrics + task counters |
 | `http://localhost:9090/metrics` (worker) | processing histogram, retries, DLQ |
+
+Submit is incremented on the API. Completed / failed / DLQ are incremented on the worker. The worker runs Celery `--pool=solo` so those counters live in the same process that serves `:9090` (prefork would scrape zeros).
 
 Custom metrics:
 

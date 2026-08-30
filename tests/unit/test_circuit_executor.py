@@ -14,5 +14,6 @@ def test_executor_runs_hadamard() -> None:
 
 
 def test_executor_rejects_invalid_qasm() -> None:
-    with pytest.raises(InvalidCircuitError):
+    with pytest.raises(InvalidCircuitError, match=r"Invalid QASM3 circuit: .+") as err:
         QiskitCircuitExecutor().validate("this is not qasm")
+    assert not str(err.value).rstrip().endswith(":")

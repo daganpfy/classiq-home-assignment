@@ -35,4 +35,5 @@ class QiskitCircuitExecutor:
 
             return qasm3.loads(qasm)
         except Exception as exc:
-            raise InvalidCircuitError(f"Invalid QASM3 circuit: {exc}") from exc
+            reason = str(exc).strip().strip('"') or "could not parse the payload"
+            raise InvalidCircuitError(f"Invalid QASM3 circuit: {reason}") from exc
